@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeatherHub | Explore Weather Worldwide</title>
+
+    <!-- Bootstrap 5 -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Bootstrap Icons -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Leaflet CSS for Interactive Radar & Map -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <!-- Custom CSS -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+</head>
+<body>
+<div class="app-layout">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <!-- Brand Header -->
+        <a href="#home" class="brand" aria-label="WeatherHub Home">
+            <div class="brand-icon-wrap">
+                <i class="bi bi-cloud-sun-fill" aria-hidden="true"></i>
+            </div>
+            <div class="brand-text-wrap">
+                <span class="brand-title">Weather<span class="brand-highlight">Hub</span></span>
+                <span class="brand-subtitle">Explore Weather Worldwide</span>
+            </div>
+        </a>
+
+        <!-- Navigation Links -->
+        <nav class="sidebar-nav" aria-label="Main navigation">
+            <a href="#home" class="nav-link active" data-nav="home">
+                <i class="bi bi-house-door-fill" aria-hidden="true"></i>
+                <span>Home</span>
+            </a>
+
+            <a href="#current-weather" class="nav-link" data-nav="current">
+                <i class="bi bi-cloud-fill" aria-hidden="true"></i>
+                <span>Current Weather</span>
+            </a>
+
+            <a href="#hourly-trend" class="nav-link" data-nav="hourly">
+                <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
+                <span>24h Trend</span>
+            </a>
+
+            <a href="#insights" class="nav-link" data-nav="insights">
+                <i class="bi bi-speedometer" aria-hidden="true"></i>
+                <span>Air &amp; Solar</span>
+            </a>
+
+            <a href="#forecast" class="nav-link" data-nav="forecast">
+                <i class="bi bi-calendar3" aria-hidden="true"></i>
+                <span>5-Day Forecast</span>
+            </a>
+
+            <a href="#favorites" class="nav-link" data-nav="favorites">
+                <i class="bi bi-heart-fill nav-heart-icon" aria-hidden="true"></i>
+                <span>Favourite Cities</span>
+            </a>
+
+            <a href="#about" class="nav-link" data-nav="about">
+                <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+                <span>About</span>
+            </a>
+        </nav>
+
+        <!-- Sidebar Bottom Illustration & Quote -->
+        <div class="sidebar-bottom">
+            <div class="globe-illustration-wrap">
+                <div class="globe-circle">
+                    <div class="globe-inner-glow"></div>
+                    <div class="globe-continents"></div>
+                    <div class="globe-clouds"></div>
+                </div>
+            </div>
+            <p class="sidebar-quote">“Better Weather<br>Better Days”</p>
+        </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div class="main-area">
+
+        <!-- TOP BAR: SEARCH & UTILITIES -->
+        <header class="topbar">
+            <!-- Mobile Menu Toggle -->
+            <button
+                type="button"
+                id="sidebar-toggle"
+                class="mobile-menu-btn d-lg-none"
+                aria-label="Toggle navigation menu"
+            >
+                <i class="bi bi-list" aria-hidden="true"></i>
+            </button>
+
+            <!-- Search Form -->
+            <div class="search-form-container">
+                <form id="weather-search-form" class="search-form" role="search">
+                    <div class="search-input-group">
+                        <i class="bi bi-geo-alt-fill search-pin-icon" aria-hidden="true"></i>
+                        <input
+                            type="text"
+                            id="city-input"
+                            class="city-input"
+                            placeholder="Search city (e.g. Hyderabad, Tokyo, London)..."
+                            value="Vijayawada"
+                            autocomplete="off"
+                            required
+                        >
+
+                        <div class="country-select-wrapper">
+                            <select id="country-input" class="country-select" aria-label="Country">
+                                <option value="">All</option>
+                                <option value="IN" selected>IN</option>
+                                <option value="US">US</option>
+                                <option value="GB">GB</option>
+                                <option value="JP">JP</option>
+                                <option value="AU">AU</option>
+                                <option value="CA">CA</option>
+                                <option value="DE">DE</option>
+                                <option value="FR">FR</option>
+                            </select>
+                            <i class="bi bi-chevron-down country-caret" aria-hidden="true"></i>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="search-button" class="search-btn">
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                        <span>Search</span>
+                    </button>
+
+                    <button type="button" id="geo-location-btn" class="geo-btn" title="Use My Current Location">
+                        <i class="bi bi-crosshair" aria-hidden="true"></i>
+                    </button>
+                </form>
+
+                <!-- Recent Searches Bar -->
+                <div id="recent-searches-bar" class="recent-searches-bar">
+                    <span class="recent-label"><i class="bi bi-clock-history"></i> Recent:</span>
+                    <div id="recent-pills-list" class="recent-pills-list"></div>
+                </div>
+            </div>
+
+            <!-- Topbar Right Utilities -->
+            <div class="topbar-right">
+                <!-- Theme Toggle -->
+                <button
+                    type="button"
+                    id="theme-toggle"
+                    class="theme-toggle-pill"
+                    title="Toggle light/dark theme"
+                    aria-label="Switch theme"
+                >
+                    <i class="bi bi-sun-fill sun-icon" aria-hidden="true"></i>
+                    <i class="bi bi-moon-fill moon-icon" aria-hidden="true"></i>
+                </button>
+
+                <!-- Temperature Unit Toggle -->
+                <div class="unit-toggle-pill" role="group" aria-label="Unit selection">
+                    <button type="button" id="unit-c" class="unit-btn active" aria-pressed="true">°C</button>
+                    <button type="button" id="unit-f" class="unit-btn" aria-pressed="false">°F</button>
+                </div>
+
+                <!-- Clock / Date Display -->
+                <div class="clock-box">
+                    <span id="current-date-text" class="clock-date">Thu, 23 Oct 2026</span>
+                    <span id="current-time-text" class="clock-time">11:30 PM</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- NOTIFICATION BANNER -->
+        <div id="weather-message" class="weather-message" role="status" aria-live="polite"></div>
+
+        <!-- MAIN DASHBOARD GRID -->
+        <main class="dashboard-grid" id="home">
+
+            <!-- CENTER COLUMN (HERO, STATS, CHART, INSIGHTS, FORECAST) -->
+            <div class="center-column">
+
+                <!-- CURRENT WEATHER HERO WITH LIVE PARTICLE ANIMATION CANVAS -->
+                <section id="current-weather" class="hero-weather-card">
+                    <!-- Dynamic Live Animated Canvas (Rain, Snow, Stars, Clouds) -->
+                    <canvas id="hero-weather-canvas" class="hero-weather-canvas" aria-hidden="true"></canvas>
+
+                    <div class="hero-scenic-overlay"></div>
+                    <div class="hero-moon-glow"></div>
+
+                    <div class="hero-content">
+                        <!-- Top Row: Location & Live Badge -->
+                        <div class="hero-header-row">
+                            <div class="hero-location-block">
+                                <h1 class="hero-city-title">
+                                    <span id="hero-city-name">Vijayawada</span>,
+                                    <span id="hero-country-code">IN</span>
+                                </h1>
+                                <p class="hero-sub-location">
+                                    <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                                    <span id="hero-state-name">Andhra Pradesh, India</span>
+                                </p>
+                                <p class="hero-timestamp" id="hero-datetime">
+                                    Thursday, 23 October 2026<br>11:30 PM
+                                </p>
+                            </div>
+
+                            <div class="hero-actions-block">
+                                <button type="button" id="btn-quick-favorite" class="btn-quick-fav" title="Save this city to favourites">
+                                    <i class="bi bi-heart" id="quick-fav-icon"></i>
+                                    <span>Favourite</span>
+                                </button>
+                                <div class="hero-live-badge">
+                                    <span class="live-dot"></span>
+                                    <span>Live Weather</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Main Temperature & Condition -->
+                        <div class="hero-temp-block">
+                            <div class="hero-temp-row">
+                                <span id="hero-temp-value" class="hero-temp-num">28.5</span>
+                                <span class="hero-temp-unit">°C</span>
+                            </div>
+                            <h2 id="hero-condition-text" class="hero-condition">Clear Sky</h2>
+                            <p class="hero-feels-like">
+                                <i class="bi bi-moon-stars-fill" id="hero-condition-subicon" aria-hidden="true"></i>
+                                Feels like <span id="hero-feels-value">31.2</span>°C
+                            </p>
+                            <div class="hero-high-low-pill">
+                                <span><i class="bi bi-arrow-up-short text-danger"></i> High: <strong id="hero-high-val">32°</strong></span>
+                                <span class="pill-divider">|</span>
+                                <span><i class="bi bi-arrow-down-short text-info"></i> Low: <strong id="hero-low-val">24°</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5 COLORFUL STAT CARDS -->
+                <section class="colorful-metrics-row" aria-label="Key weather statistics">
+                    <!-- Card 1: Feels Like (Coral/Red) -->
+                    <article class="stat-card stat-feels-like">
+                        <i class="bi bi-thermometer-half stat-icon" aria-hidden="true"></i>
+                        <span class="stat-label">Feels Like</span>
+                        <h3 class="stat-value"><span id="metric-feels-like">31.2</span>°C</h3>
+                    </article>
+
+                    <!-- Card 2: Humidity (Blue) -->
+                    <article class="stat-card stat-humidity">
+                        <i class="bi bi-droplet-fill stat-icon" aria-hidden="true"></i>
+                        <span class="stat-label">Humidity</span>
+                        <h3 class="stat-value"><span id="metric-humidity">74</span>%</h3>
+                    </article>
+
+                    <!-- Card 3: Wind Speed (Green) -->
+                    <article class="stat-card stat-wind">
+                        <i class="bi bi-wind stat-icon" aria-hidden="true"></i>
+                        <span class="stat-label">Wind Speed</span>
+                        <h3 class="stat-value"><span id="metric-wind-speed">3.6</span> m/s</h3>
+                    </article>
+
+                    <!-- Card 4: Pressure (Purple) -->
+                    <article class="stat-card stat-pressure">
+                        <i class="bi bi-speedometer2 stat-icon" aria-hidden="true"></i>
+                        <span class="stat-label">Pressure</span>
+                        <h3 class="stat-value"><span id="metric-pressure">1008</span> hPa</h3>
+                    </article>
+
+                    <!-- Card 5: Visibility (Teal/Cyan) -->
+                    <article class="stat-card stat-visibility">
+                        <i class="bi bi-eye-fill stat-icon" aria-hidden="true"></i>
+                        <span class="stat-label">Visibility</span>
+                        <h3 class="stat-value"><span id="metric-visibility">10</span> km</h3>
+                    </article>
+                </section>
+
+                <!-- 24-HOUR TEMPERATURE & CONDITION TREND CHART -->
+                <section id="hourly-trend" class="panel-card chart-section">
+                    <div class="panel-header">
+                        <h2 class="panel-title">
+                            <i class="bi bi-graph-up-arrow chart-accent" aria-hidden="true"></i>
+                            <span>24-Hour Temperature &amp; Condition Trend</span>
+                        </h2>
+                        <span class="chart-subtitle" id="chart-city-label">Vijayawada, IN</span>
+                    </div>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="hourly-temp-chart" height="155"></canvas>
+                    </div>
+                    <div id="chart-hourly-pills" class="chart-hourly-pills"></div>
+                </section>
+
+                <!-- ADVANCED WEATHER INSIGHTS: SOLAR ARC, AIR QUALITY, WIND COMPASS -->
+                <section id="insights" class="insights-grid" aria-label="Solar and atmospheric indicators">
+                    <!-- Solar Arc Card -->
+                    <article class="panel-card solar-arc-card">
+                        <div class="panel-header-sm">
+                            <h3><i class="bi bi-brightness-high-fill text-warning"></i> Sun Position &amp; Daylight</h3>
+                            <span id="daylight-duration-text" class="daylight-badge">-- hrs daylight</span>
+                        </div>
+                        <div class="solar-arc-visual">
+                            <svg id="solar-arc-svg" viewBox="0 0 300 130" class="solar-arc-svg">
+                                <defs>
+                                    <linearGradient id="arcGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stop-color="#ffb703" />
+                                        <stop offset="100%" stop-color="#fb8500" />
+                                    </linearGradient>
+                                </defs>
+                                <path d="M 30,110 A 120,95 0 0,1 270,110" class="arc-track" />
+                                <path id="solar-arc-progress" d="M 30,110 A 120,95 0 0,1 150,15" class="arc-progress" />
+                                <line x1="20" y1="110" x2="280" y2="110" class="arc-horizon" />
+                                <circle id="solar-sun-dot" cx="150" cy="15" r="9" class="solar-sun" />
+                            </svg>
+                            <div class="solar-times-row">
+                                <div class="solar-time-col">
+                                    <span class="solar-label"><i class="bi bi-sunrise"></i> Sunrise</span>
+                                    <span id="solar-sunrise-val" class="solar-val">06:05 AM</span>
+                                </div>
+                                <div class="solar-time-col text-end">
+                                    <span class="solar-label"><i class="bi bi-sunset"></i> Sunset</span>
+                                    <span id="solar-sunset-val" class="solar-val">05:48 PM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Air Quality Index Card -->
+                    <article class="panel-card aqi-card">
+                        <div class="panel-header-sm">
+                            <h3><i class="bi bi-shield-check text-info"></i> Air Quality Index</h3>
+                            <span id="aqi-badge" class="aqi-badge aqi-good">Good</span>
+                        </div>
+                        <div class="aqi-meter-wrap">
+                            <div class="aqi-meter-bar">
+                                <div id="aqi-meter-fill" class="aqi-meter-fill" style="width: 25%;"></div>
+                            </div>
+                            <div class="aqi-scale-labels">
+                                <span>Good</span>
+                                <span>Fair</span>
+                                <span>Mod</span>
+                                <span>Poor</span>
+                                <span>V.Poor</span>
+                            </div>
+                        </div>
+                        <p id="aqi-advice" class="aqi-advice">Air quality is healthy and ideal for outdoor exercise.</p>
+                        <div class="aqi-pollutants-grid">
+                            <div class="pollutant-box">
+                                <span class="pollutant-label">PM2.5</span>
+                                <span id="pollutant-pm25" class="pollutant-val">12.4</span>
+                            </div>
+                            <div class="pollutant-box">
+                                <span class="pollutant-label">PM10</span>
+                                <span id="pollutant-pm10" class="pollutant-val">28.1</span>
+                            </div>
+                            <div class="pollutant-box">
+                                <span class="pollutant-label">O₃</span>
+                                <span id="pollutant-o3" class="pollutant-val">42.0</span>
+                            </div>
+                            <div class="pollutant-box">
+                                <span class="pollutant-label">NO₂</span>
+                                <span id="pollutant-no2" class="pollutant-val">14.6</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Wind Direction Compass Card -->
+                    <article class="panel-card compass-card">
+                        <div class="panel-header-sm">
+                            <h3><i class="bi bi-compass text-success"></i> Wind Direction</h3>
+                            <span id="compass-degrees-text" class="compass-badge">140° SE</span>
+                        </div>
+                        <div class="compass-visual-wrap">
+                            <div class="compass-dial">
+                                <span class="dial-dir dial-n">N</span>
+                                <span class="dial-dir dial-e">E</span>
+                                <span class="dial-dir dial-s">S</span>
+                                <span class="dial-dir dial-w">W</span>
+                                <div class="compass-center-ring"></div>
+                                <div id="compass-needle" class="compass-needle">
+                                    <div class="needle-north"></div>
+                                    <div class="needle-south"></div>
+                                </div>
+                            </div>
+                            <div class="compass-info">
+                                <div class="compass-info-row">
+                                    <span class="compass-info-label">Direction:</span>
+                                    <strong id="compass-cardinal-dir">SE (Southeast)</strong>
+                                </div>
+                                <div class="compass-info-row">
+                                    <span class="compass-info-label">Speed:</span>
+                                    <strong id="compass-speed-val">3.6 m/s</strong>
+                                </div>
+                                <div class="compass-info-row">
+                                    <span class="compass-info-label">Gusts:</span>
+                                    <strong id="compass-gust-val">5.1 m/s</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- 5-DAY WEATHER FORECAST -->
+                <section id="forecast" class="panel-card forecast-section">
+                    <div class="panel-header">
+                        <h2 class="panel-title">
+                            <i class="bi bi-calendar3" aria-hidden="true"></i>
+                            <span>5-Day Weather Forecast</span>
+                        </h2>
+                        <button type="button" id="btn-view-detailed-forecast" class="btn-panel-action">
+                            <span>View Detailed Forecast</span>
+                            <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                        </button>
+                    </div>
+
+                    <div id="forecast-cards-container" class="forecast-cards-grid">
+                        <!-- Populated dynamically via OpenWeather forecast API -->
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- RIGHT COLUMN (FAVOURITES & WORLD WEATHER) -->
+            <div class="right-column">
+
+                <!-- FAVOURITE CITIES -->
+                <section id="favorites" class="panel-card favourites-panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">
+                            <i class="bi bi-heart-fill fav-heart-accent" aria-hidden="true"></i>
+                            <span>Favourite Cities</span>
+                        </h2>
+                        <button type="button" id="btn-add-favorite" class="btn-add-city">
+                            <i class="bi bi-plus" aria-hidden="true"></i>
+                            <span>Add City</span>
+                        </button>
+                    </div>
+
+                    <div id="favorites-list-container" class="favourites-list">
+                        <!-- Populated dynamically via MySQL REST API -->
+                    </div>
+
+                    <button type="button" id="btn-view-all-favorites" class="btn-view-all">
+                        <span>View All Favourite Cities</span>
+                        <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </button>
+                </section>
+
+                <!-- WEATHER AROUND THE WORLD -->
+                <section class="panel-card world-panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">
+                            <i class="bi bi-globe2 world-globe-accent" aria-hidden="true"></i>
+                            <span>Weather around the World</span>
+                        </h2>
+                        <button type="button" id="btn-view-on-map" class="btn-panel-action">
+                            <i class="bi bi-map"></i>
+                            <span>View on Map</span>
+                        </button>
+                    </div>
+
+                    <div class="world-cities-list">
+                        <!-- New York -->
+                        <div class="world-city-row" role="button" tabindex="0" data-city="New York" data-country="US">
+                            <img
+                                class="world-city-thumb"
+                                src="https://images.unsplash.com/photo-1485738422979-f5c462d49f74?w=100&auto=format&fit=crop&q=80"
+                                alt="New York landmark"
+                            >
+                            <div class="world-city-meta">
+                                <strong class="world-city-name">New York, US</strong>
+                            </div>
+                            <div class="world-city-weather">
+                                <i class="bi bi-sun-fill sun-color" aria-hidden="true"></i>
+                                <div class="world-temp-stack">
+                                    <span class="world-temp">12.4°C</span>
+                                    <span class="world-cond">Clear Sky</span>
+                                </div>
+                            </div>
+                            <i class="bi bi-chevron-right world-arrow" aria-hidden="true"></i>
+                        </div>
+
+                        <!-- London -->
+                        <div class="world-city-row" role="button" tabindex="0" data-city="London" data-country="GB">
+                            <img
+                                class="world-city-thumb"
+                                src="https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=100&auto=format&fit=crop&q=80"
+                                alt="London Big Ben"
+                            >
+                            <div class="world-city-meta">
+                                <strong class="world-city-name">London, GB</strong>
+                            </div>
+                            <div class="world-city-weather">
+                                <i class="bi bi-cloud-fill cloud-color" aria-hidden="true"></i>
+                                <div class="world-temp-stack">
+                                    <span class="world-temp">10.1°C</span>
+                                    <span class="world-cond">Cloudy</span>
+                                </div>
+                            </div>
+                            <i class="bi bi-chevron-right world-arrow" aria-hidden="true"></i>
+                        </div>
+
+                        <!-- Tokyo -->
+                        <div class="world-city-row" role="button" tabindex="0" data-city="Tokyo" data-country="JP">
+                            <img
+                                class="world-city-thumb"
+                                src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=100&auto=format&fit=crop&q=80"
+                                alt="Tokyo Pagoda"
+                            >
+                            <div class="world-city-meta">
+                                <strong class="world-city-name">Tokyo, JP</strong>
+                            </div>
+                            <div class="world-city-weather">
+                                <i class="bi bi-cloud-sun-fill sun-cloud-color" aria-hidden="true"></i>
+                                <div class="world-temp-stack">
+                                    <span class="world-temp">18.7°C</span>
+                                    <span class="world-cond">Partly Cloudy</span>
+                                </div>
+                            </div>
+                            <i class="bi bi-chevron-right world-arrow" aria-hidden="true"></i>
+                        </div>
+
+                        <!-- Sydney -->
+                        <div class="world-city-row" role="button" tabindex="0" data-city="Sydney" data-country="AU">
+                            <img
+                                class="world-city-thumb"
+                                src="https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=100&auto=format&fit=crop&q=80"
+                                alt="Sydney Opera House"
+                            >
+                            <div class="world-city-meta">
+                                <strong class="world-city-name">Sydney, AU</strong>
+                            </div>
+                            <div class="world-city-weather">
+                                <i class="bi bi-sun-fill sun-color" aria-hidden="true"></i>
+                                <div class="world-temp-stack">
+                                    <span class="world-temp">21.3°C</span>
+                                    <span class="world-cond">Sunny</span>
+                                </div>
+                            </div>
+                            <i class="bi bi-chevron-right world-arrow" aria-hidden="true"></i>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+        </main>
+
+        <!-- ABOUT SECTION -->
+        <section id="about" class="panel-card about-section-wrapper">
+            <div class="about-card-inner">
+                <div class="about-header-bar">
+                    <h2 class="about-main-heading">About WeatherApplication</h2>
+                    <a href="#home" class="btn-back-to-home">
+                        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                        <span>Back to Dashboard</span>
+                    </a>
+                </div>
+
+                <div class="about-content-body">
+                    <p class="about-lead-para">
+                        WeatherApplication is a modern weather intelligence platform delivering real-time meteorological conditions, interactive 24-hour hourly trend analytics, five-day weather forecasts, air quality index monitoring, solar arc tracking, and persistent favourite cities backed by MySQL and Flask REST APIs.
+                    </p>
+
+                    <div class="about-columns-grid">
+                        <div class="about-col">
+                            <h3><i class="bi bi-stars" aria-hidden="true"></i> Key Features</h3>
+                            <ul>
+                                <li>Current weather queries across global cities with resilient fuzzy resolution.</li>
+                                <li>Real-time canvas weather animation effects (falling rain, snow, drifting clouds, twinkling night stars).</li>
+                                <li>24-Hour hourly temperature spline chart with interactive hover metrics.</li>
+                                <li>Sun Position Solar Arc visualizer tracking sunrise, sunset, and active daylight.</li>
+                                <li>Air Quality Index (AQI) monitoring with PM2.5, PM10, O3, NO2 metrics and health guidance.</li>
+                                <li>Wind Direction 360° Compass with rotating needle and gust tracking.</li>
+                                <li>Interactive Leaflet Weather Radar Map with live precipitation overlay.</li>
+                                <li>Seamless °C and °F temperature unit toggling without redundant network calls.</li>
+                                <li>Favourite cities persistence via MySQL REST APIs with Add, Edit Nickname, and Delete operations.</li>
+                            </ul>
+                        </div>
+
+                        <div class="about-col">
+                            <h3><i class="bi bi-cpu" aria-hidden="true"></i> How It Works &amp; Stack</h3>
+                            <ul>
+                                <li><strong>Frontend:</strong> HTML5, Responsive CSS3 Grid/Flexbox, ES6+ JavaScript, Leaflet.js, Canvas Animations, Bootstrap 5.3, Bootstrap Icons.</li>
+                                <li><strong>Backend:</strong> Python 3.13, Flask REST API endpoints (`/api/weather/current`, `/api/weather/forecast`, `/api/favorites`).</li>
+                                <li><strong>Database:</strong> MySQL relational database (`favorites` table) with parameterized SQL safety.</li>
+                                <li><strong>API Security:</strong> OpenWeather API keys remain secured on the server side and are never exposed in frontend files.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="app-footer">
+            <p>WeatherHub · Explore Weather Worldwide</p>
+        </footer>
+
+    </div>
+
+</div>
+
+<!-- INTERACTIVE WEATHER MAP MODAL -->
+<div id="weather-map-modal" class="custom-modal" role="dialog" aria-modal="true" aria-labelledby="weather-map-title" aria-hidden="true">
+    <div class="modal-card modal-card-xl">
+        <div class="modal-card-header">
+            <div class="modal-header-left">
+                <h2 id="weather-map-title" class="modal-title"><i class="bi bi-map-fill text-info"></i> Interactive Weather Radar &amp; Map</h2>
+                <span id="map-modal-city-subtitle" class="map-subtitle">Vijayawada, IN</span>
+            </div>
+            <div class="map-layer-toggles">
+                <button type="button" id="btn-toggle-radar" class="btn-map-control active">
+                    <i class="bi bi-radar"></i> <span>Radar Overlay</span>
+                </button>
+                <button type="button" id="close-map-modal" class="modal-close-btn" aria-label="Close modal">&times;</button>
+            </div>
+        </div>
+        <div class="modal-body-map">
+            <div id="interactive-weather-map" class="interactive-weather-map"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ADD FAVOURITE MODAL -->
+<div id="add-favorite-modal" class="custom-modal" role="dialog" aria-modal="true" aria-labelledby="add-modal-title" aria-hidden="true">
+    <div class="modal-card">
+        <div class="modal-card-header">
+            <h2 id="add-modal-title" class="modal-title">Add Favourite City</h2>
+            <button type="button" id="close-add-modal" class="modal-close-btn" aria-label="Close modal">&times;</button>
+        </div>
+        <form id="add-favorite-form" class="modal-form">
+            <div class="form-group">
+                <label for="fav-city-input">City Name *</label>
+                <input type="text" id="fav-city-input" name="city" placeholder="e.g. Hyderabad" maxlength="100" required>
+            </div>
+            <div class="form-group">
+                <label for="fav-country-input">Country Code * (2 letters)</label>
+                <input type="text" id="fav-country-input" name="country" placeholder="e.g. IN" maxlength="2" pattern="[A-Za-z]{2}" required>
+            </div>
+            <div class="form-group">
+                <label for="fav-nickname-input">Nickname (Optional)</label>
+                <input type="text" id="fav-nickname-input" name="nickname" placeholder="e.g. My Home" maxlength="100">
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="cancel-add-modal" class="btn-modal-cancel">Cancel</button>
+                <button type="submit" id="submit-add-modal" class="btn-modal-save">Save Favourite</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- EDIT NICKNAME MODAL -->
+<div id="edit-favorite-modal" class="custom-modal" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title" aria-hidden="true">
+    <div class="modal-card">
+        <div class="modal-card-header">
+            <h2 id="edit-modal-title" class="modal-title">Edit City Nickname</h2>
+            <button type="button" id="close-edit-modal" class="modal-close-btn" aria-label="Close modal">&times;</button>
+        </div>
+        <form id="edit-favorite-form" class="modal-form">
+            <input type="hidden" id="edit-fav-id">
+            <div class="form-group">
+                <label for="edit-fav-city">City</label>
+                <input type="text" id="edit-fav-city" readonly class="input-readonly">
+            </div>
+            <div class="form-group">
+                <label for="edit-fav-country">Country</label>
+                <input type="text" id="edit-fav-country" readonly class="input-readonly">
+            </div>
+            <div class="form-group">
+                <label for="edit-fav-nickname">Nickname</label>
+                <input type="text" id="edit-fav-nickname" placeholder="e.g. Work Office" maxlength="100">
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="cancel-edit-modal" class="btn-modal-cancel">Cancel</button>
+                <button type="submit" id="submit-edit-modal" class="btn-modal-save">Update Nickname</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- DELETE CONFIRMATION MODAL -->
+<div id="delete-favorite-modal" class="custom-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" aria-hidden="true">
+    <div class="modal-card modal-card-sm">
+        <div class="modal-card-header">
+            <h2 id="delete-modal-title" class="modal-title text-danger">Delete Favourite</h2>
+            <button type="button" id="close-delete-modal" class="modal-close-btn" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body-content">
+            <p>Are you sure you want to remove <strong id="delete-fav-city-name">this city</strong> from your favourites?</p>
+        </div>
+        <div class="modal-actions">
+            <button type="button" id="cancel-delete-modal" class="btn-modal-cancel">Cancel</button>
+            <button type="button" id="confirm-delete-modal" class="btn-modal-danger">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- DETAILED FORECAST MODAL -->
+<div id="detailed-forecast-modal" class="custom-modal" role="dialog" aria-modal="true" aria-labelledby="detailed-forecast-title" aria-hidden="true">
+    <div class="modal-card modal-card-lg">
+        <div class="modal-card-header">
+            <h2 id="detailed-forecast-title" class="modal-title">24-Hour &amp; Detailed Forecast</h2>
+            <button type="button" id="close-detailed-modal" class="modal-close-btn" aria-label="Close modal">&times;</button>
+        </div>
+        <div id="detailed-hourly-strip" class="detailed-forecast-body">
+            <!-- 3-hour intervals populated dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5 Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Leaflet JS for Interactive Weather Map & Radar -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Application JavaScript -->
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
